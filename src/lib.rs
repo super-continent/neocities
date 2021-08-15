@@ -12,11 +12,13 @@ enum Auth {
     Key(String),
 }
 
+/// The main Neocities API client wrapper.
 pub struct Neocities {
     auth: Auth,
     client: reqwest::Client,
 }
 
+/// A path and its metadata returned by the server.
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum ListEntry {
@@ -32,6 +34,7 @@ pub enum ListEntry {
     },
 }
 
+/// Info about a Neocities site
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Info {
     #[serde(rename = "sitename")]
@@ -80,7 +83,7 @@ impl<T> ApiResult<T> {
 }
 
 impl Neocities {
-    /// Create a new `Site` that logs in using an API key
+    /// Create a new [`Neocities`] client authenticated using an API key
     pub fn new(key: String) -> Self {
         let client = reqwest::Client::new();
 
@@ -90,7 +93,7 @@ impl Neocities {
         }
     }
 
-    /// Create a new `Site` that logs in using a username and password
+    /// Create a new [`Neocities`] client authenticated using a username and password
     pub fn login(username: String, password: String) -> Self {
         let client = reqwest::Client::new();
         let auth = Auth::Login { username, password };
@@ -98,6 +101,8 @@ impl Neocities {
         Self { client, auth }
     }
 
+    /// Get a list of files in the authorized site. `path` can be used to specify
+    /// which directory to list the files in. If `path` is empty it will list all items.
     pub async fn list<T: AsRef<str>>(&self, path: T) -> Result<Vec<ListEntry>, NeocitiesError> {
         let mut request = self.client.get(API_URL.to_string() + "list");
         request = add_authorization_header(request, &self.auth);
@@ -113,6 +118,8 @@ impl Neocities {
             .to_result()
     }
 
+    /// Get info about a Neocities site.
+    /// If `site_name` is empty it will get info about the site used for authentication
     pub async fn info<T: AsRef<str>>(&self, site_name: T) -> Result<Info, NeocitiesError> {
         let mut request = self.client.get(API_URL.to_string() + "info");
         request = add_authorization_header(request, &self.auth);
@@ -125,6 +132,8 @@ impl Neocities {
         response.json::<ApiResult<Info>>().await?.to_result()
     }
 
+    /// Get the API key for the currently authorized account.
+    /// If the account has no current key, one will be newly generated
     pub async fn key(&self) -> Result<String, NeocitiesError> {
         let mut request = self.client.get(API_URL.to_string() + "key");
         request = add_authorization_header(request, &self.auth);
@@ -133,6 +142,8 @@ impl Neocities {
         response.json::<ApiResult<String>>().await?.to_result()
     }
 
+    /// Upload a file to the current [`Neocities`] site.
+    /// Returns the success message sent by the server
     pub async fn upload<T: Into<Body>>(
         &self,
         file_path: String,
@@ -150,7 +161,12 @@ impl Neocities {
         response.json::<ApiResult<String>>().await?.to_result()
     }
 
-    pub async fn delete<T: AsRef<[String]>>(&self, file_paths: T) -> Result<String, NeocitiesError> {
+    /// Delete files from the current [`Neocities`] site.
+    /// Returns the success message sent by the server
+    pub async fn delete<T: AsRef<[String]>>(
+        &self,
+        file_paths: T,
+    ) -> Result<String, NeocitiesError> {
         let mut request = self.client.post(API_URL.to_string() + "delete");
         request = add_authorization_header(request, &self.auth);
 
@@ -158,7 +174,12 @@ impl Neocities {
             request = request.query(&[("filenames[]", path.as_str())]);
         }
 
-        request.send().await?.json::<ApiResult<String>>().await?.to_result()
+        request
+            .send()
+            .await?
+            .json::<ApiResult<String>>()
+            .await?
+            .to_result()
     }
 }
 
@@ -169,6 +190,7 @@ fn add_authorization_header(request: RequestBuilder, auth: &Auth) -> RequestBuil
     }
 }
 
+/// The `neocities` error type.
 #[derive(Error, Debug)]
 pub enum NeocitiesError {
     #[error("API returned error `{0}` with message `{1}`")]
