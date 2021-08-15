@@ -1,3 +1,12 @@
+//! A simple [Neocities](https://neocities.org) API client wrapper.
+//!
+//! # Usage:
+//!
+//! Start by constructing a [`Neocities`] instance using an API key with [`Neocities::key`]
+//! or a username/password combo using [`Neocities::login`].
+//!
+//! After that you are free to call any methods on the [`Neocities`]
+//! instance to use their respective API calls
 use reqwest::{
     multipart::{Form, Part},
     Body, RequestBuilder,
