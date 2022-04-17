@@ -1,6 +1,6 @@
 use std::{fs::File, io::Read, path::PathBuf};
 
-use clap::Clap;
+use clap::{Parser, Subcommand};
 use neocities::{ListEntry, Neocities};
 use walkdir::WalkDir;
 
@@ -15,7 +15,7 @@ async fn main() {
     }
 }
 
-#[derive(Debug, Clap)]
+#[derive(Debug, Parser)]
 struct Cli {
     /// The API key for your Neocities site.
     /// If a key is not passed through this flag,
@@ -32,7 +32,7 @@ struct Cli {
     subcommand: ApiCmd,
 }
 
-#[derive(Debug, Clap)]
+#[derive(Debug, Subcommand)]
 enum ApiCmd {
     /// Get info about a Neocities site
     Info { site_name: String },
